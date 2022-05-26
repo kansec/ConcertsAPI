@@ -10,43 +10,60 @@ namespace ConcertsAPI.Controllers
     [ApiController]
     public class AccountController : ControllerBase
     {
-        private readonly IMapper _mapper;
         private readonly IAuthManager _authManager;
 
-        public AccountController(IMapper mapper, IAuthManager authManager)
+        public AccountController(IAuthManager authManager)
         {
-            _mapper = mapper;
             _authManager = authManager;
         }
 
         [HttpPost]
         [Route("login")]
-        public async Task<IActionResult> Login([FromBody]LoginDto loginDto)
+        public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
         {
             var loginResult = await _authManager.Login(loginDto);
 
-            if(loginResult == null)
+            if (loginResult == null)
             {
                 return Unauthorized();
             }
 
             return Ok(loginResult);
-            
+
 
         }
 
         [HttpPost]
         [Route("register")]
-        public async Task<IActionResult> Register(ApiUserDto apiUserDto)
+        public async Task<IActionResult> Register([FromBody] ApiUserDto apiUserDto)
         {
+            var errors = await _authManager.Register(apiUserDto);
 
+            if(errors != null)
+            {
+                foreach(var error in errors)
+                {
+                    ModelState.AddModelError(error.Code, error.Description);
+
+                }
+                return BadRequest(ModelState);
+            }
+
+            return Ok();
 
         }
 
         [HttpPost]
         [Route("refreshtoken")]
-        public async Task<IActionResult> Login()
+        public async Task<IActionResult> RefreshToken([FromBody] AuthResponseDto authResponseDto)
         {
+            var authResponse = await _authManager.VerifyRefreshToken(authResponseDto);
+            if(authResponse == null)
+            {
+                return Unauthorized();
+            }
+
+            return Ok(authResponse);
 
         }
 
